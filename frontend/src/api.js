@@ -26,8 +26,14 @@ export const api = {
   login(credentials) {
     return apiClient.post('/auth/login', credentials)
   },
-  changePassword(passwordData) {
-    return apiClient.post('/auth/change-password', passwordData)
+  logout() {
+    return apiClient.post('/auth/logout')
+  },
+  getProfile() {
+    return apiClient.get('/auth/profile')
+  },
+  getPermissions() {
+    return apiClient.get('/auth/permissions')
   },
 
   // User endpoints
@@ -41,13 +47,47 @@ export const api = {
     return apiClient.post('/users', userData)
   },
   updateUser(id, userData) {
-    return apiClient.patch(`/users/${id}`, userData)
+    return apiClient.put(`/users/${id}`, userData)
   },
   deleteUser(id) {
     return apiClient.delete(`/users/${id}`)
   },
 
-  // Customer endpoints
+  // Role endpoints
+  getRoles() {
+    return apiClient.get('/roles')
+  },
+  createRole(roleData) {
+    return apiClient.post('/roles', roleData)
+  },
+  updateRole(id, roleData) {
+    return apiClient.put(`/roles/${id}`, roleData)
+  },
+  deleteRole(id) {
+    return apiClient.delete(`/roles/${id}`)
+  },
+
+  // Project endpoints
+  getProjects() {
+    return apiClient.get('/projects')
+  },
+  getProjectById(id) {
+    return apiClient.get(`/projects/${id}`)
+  },
+  createProject(projectData) {
+    return apiClient.post('/projects', projectData)
+  },
+  updateProject(id, projectData) {
+    return apiClient.put(`/projects/${id}`, projectData)
+  },
+  deleteProject(id) {
+    return apiClient.delete(`/projects/${id}`)
+  },
+  assignUserToProject(projectId, assignData) {
+    return apiClient.put(`/projects/${projectId}/assign`, assignData)
+  },
+
+  // CRM Customer endpoints
   getCustomers() {
     return apiClient.get('/customers')
   },
@@ -58,13 +98,13 @@ export const api = {
     return apiClient.post('/customers', customerData)
   },
   updateCustomer(id, customerData) {
-    return apiClient.patch(`/customers/${id}`, customerData)
+    return apiClient.put(`/customers/${id}`, customerData)
   },
   deleteCustomer(id) {
     return apiClient.delete(`/customers/${id}`)
   },
 
-  // Lead endpoints
+  // CRM Lead endpoints
   getLeads() {
     return apiClient.get('/leads')
   },
@@ -75,9 +115,26 @@ export const api = {
     return apiClient.post('/leads', leadData)
   },
   updateLead(id, leadData) {
-    return apiClient.patch(`/leads/${id}`, leadData)
+    return apiClient.put(`/leads/${id}`, leadData)
   },
   deleteLead(id) {
     return apiClient.delete(`/leads/${id}`)
+  },
+
+  // CRM Interaction endpoints
+  getInteractions() {
+    return apiClient.get('/crm/interactions')
+  },
+  getInteractionById(id) {
+    return apiClient.get(`/crm/interactions/${id}`)
+  },
+  createInteraction(interactionData) {
+    return apiClient.post('/crm/interactions', interactionData)
+  },
+  updateInteraction(id, interactionData) {
+    return apiClient.put(`/crm/interactions/${id}`, interactionData)
+  },
+  deleteInteraction(id) {
+    return apiClient.delete(`/crm/interactions/${id}`)
   }
 }

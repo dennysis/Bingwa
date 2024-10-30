@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LandingPage from '../components/LandingPage.vue'
 import UserLogin from '../components/UserLogin.vue'
 import UserSignup from '../components/UserSignup.vue'
-import Dashboard from '../components/Dashboard.vue'
+import DashboardView from '../components/Dashboard.vue'
 import CustomerList from '../components/CustomerList.vue'
 import CustomerForm from '../components/CustomerForm.vue'
 import UserList from '../components/UserList.vue'
@@ -27,10 +27,9 @@ const routes = [
   {
     path: '/dashboard',
     name: 'Dashboard',
-    component: Dashboard,
+    component: DashboardView,
     meta: { requiresAuth: true }
-  },
-  {
+  },  {
     path: '/customers',
     name: 'Customers',
     component: CustomerList,

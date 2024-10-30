@@ -1,100 +1,167 @@
 <template>
-  <div class="dashboard-container">
+  <div class="dashboard">
     <header class="dashboard-header">
       <h1>Dashboard</h1>
       <div class="user-info">
-        <span>Welcome, {{ user?.first_name }}</span>
-        <button @click="handleLogout" class="logout-btn">Logout</button>
+        <span>Welcome, {{ userName }} ({{ userRole }})</span>
       </div>
     </header>
 
-    <nav class="dashboard-nav">
-      <router-link to="/customers" class="nav-item">
-        <span class="nav-count">{{ customerCount }}</span>
-        Customers
-      </router-link>
-      <router-link to="/users" class="nav-item">
-        <span class="nav-count">{{ userCount }}</span>
-        Users
-      </router-link>
-      <router-link to="/leads" class="nav-item">
-        <span class="nav-count">{{ leadCount }}</span>
-        Leads
-      </router-link>
-    </nav>
-
     <div class="dashboard-content">
-      <div class="stats-grid">
-        <div class="stat-card">
-          <h3>Total Customers</h3>
-          <p>{{ customerCount }}</p>
-        </div>
-        <div class="stat-card">
+      <!-- Stats Section -->
+      <div class="quick-stats">
+        <!-- Admin Stats -->
+        <div v-if="userRole === 'Admin'" class="stat-card">
           <h3>Total Users</h3>
-          <p>{{ userCount }}</p>
+          <p>{{ stats.users }}</p>
         </div>
+        
+        <!-- Common Stats -->
         <div class="stat-card">
-          <h3>Active Leads</h3>
-          <p>{{ leadCount }}</p>
+          <h3>Active Projects</h3>
+          <p>{{ stats.projects }}</p>
+        </div>
+        
+        <div v-if="userRole !== 'Engineer'" class="stat-card">
+          <h3>Customers</h3>
+          <p>{{ stats.customers }}</p>
+        </div>
+        
+        <div v-if="userRole !== 'Engineer'" class="stat-card">
+          <h3>Leads</h3>
+          <p>{{ stats.leads }}</p>
+        </div>
+        
+        <div v-if="userRole === 'Engineer'" class="stat-card">
+          <h3>My Tasks</h3>
+          <p>{{ stats.tasks }}</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-grid">
+        <!-- Admin Actions -->
+        <div v-if="userRole === 'Admin'" class="action-section">
+          <h2>Administration</h2>
+          <div class="action-buttons">
+            <router-link to="/users" class="action-btn">Manage Users</router-link>
+            <router-link to="/settings" class="action-btn">System Settings</router-link>
+          </div>
+        </div>
+
+        <!-- Project Management -->
+        <div v-if="userRole !== 'Engineer'" class="action-section">
+          <h2>Projects & Customers</h2>
+          <div class="action-buttons">
+            <router-link to="/projects" class="action-btn">Manage Projects</router-link>
+            <router-link to="/customers" class="action-btn">Manage Customers</router-link>
+            <router-link to="/leads" class="action-btn">Manage Leads</router-link>
+          </div>
+        </div>
+
+        <!-- Engineer Actions -->
+        <div v-if="userRole === 'Engineer'" class="action-section">
+          <h2>My Work</h2>
+          <div class="action-buttons">
+            <router-link to="/my-projects" class="action-btn">My Projects</router-link>
+            <router-link to="/my-tasks" class="action-btn">My Tasks</router-link>
+            <router-link to="/submit-update" class="action-btn">Submit Update</router-link>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="recent-activity">
+        <h2>Recent Activity</h2>
+        <div class="activity-list">
+          <div v-for="activity in recentActivities" :key="activity.id" class="activity-item">
+            <span class="activity-time">{{ activity.time }}</span>
+            <span class="activity-description">{{ activity.description }}</span>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </template>
-
 <script>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, computed } from 'vue'
 import { api } from '../api'
 
 export default {
-  name: 'DashboardView',
+  name: 'MainDashboard',
   setup() {
-    const router = useRouter()
-    const user = ref(null)
-    const customerCount = ref(0)
-    const userCount = ref(0)
-    const leadCount = ref(0)
+    const stats = ref({
+      users: 0,
+      projects: 0,
+      customers: 0,
+      leads: 0,
+      tasks: 0
+    })
 
-    const fetchDashboardData = async () => {
-      try {
-        const [customers, users, leads] = await Promise.all([
-          api.getCustomers(),
-          api.getUsers(),
-          api.getLeads()
-        ])
-        
-        customerCount.value = customers.data.length
-        userCount.value = users.data.length
-        leadCount.value = leads.data.length
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error)
+    const recentActivities = ref([])
+    const userName = ref('')
+    const userRole = computed(() => localStorage.getItem('userRole'))
+
+    const updateDashboardStats = (responses) => {
+      if (userRole.value === 'Admin') {
+        stats.value.users = responses[0].length;
+        stats.value.projects = responses[1].length;
+        stats.value.customers = responses[2].length;
+        stats.value.leads = responses[3].length;
+        stats.value.tasks = responses[4].length;
+      } else if (userRole.value === 'Project Manager') {
+        stats.value.projects = responses[0].length;
+        stats.value.customers = responses[1].length;
+        stats.value.leads = responses[2].length;
+      } else {
+        stats.value.projects = responses[0].length; // Only assigned projects
       }
     }
 
-    const handleLogout = () => {
-      localStorage.removeItem('token')
-      router.push('/login')
+    const fetchDashboardData = async () => {
+      try {
+        const promises = [];
+        if (userRole.value === 'Admin') {
+          promises.push(
+            api.getUsers(),
+            api.getProjects(),
+            api.getCustomers(),
+            api.getLeads(),
+            api.getInteractions()
+          );
+        } else if (userRole.value === 'Project Manager') {
+          promises.push(
+            api.getProjects(),
+            api.getCustomers(),
+            api.getLeads()
+          );
+        } else {
+          promises.push(api.getProjects());
+        }
+
+        const responses = await Promise.all(promises);
+        updateDashboardStats(responses);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      }
     }
 
-    onMounted(() => {
-      fetchDashboardData()
-    })
+    onMounted(fetchDashboardData)
 
     return {
-      user,
-      customerCount,
-      userCount,
-      leadCount,
-      handleLogout
+      stats,
+      recentActivities,
+      userName,
+      userRole
     }
   }
 }
 </script>
-
 <style scoped>
-.dashboard-container {
+.dashboard {
   padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .dashboard-header {
@@ -104,65 +171,80 @@ export default {
   margin-bottom: 30px;
 }
 
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.logout-btn {
-  padding: 8px 16px;
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.dashboard-nav {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.nav-item {
-  text-decoration: none;
-  color: #333;
-  padding: 10px 20px;
-  border-radius: 4px;
-  background-color: #f8f9fa;
-}
-
-.nav-count {
-  background-color: #007bff;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 12px;
-  margin-right: 8px;
-}
-
-.stats-grid {
+.quick-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 20px;
+  margin-bottom: 40px;
 }
 
 .stat-card {
-  background-color: white;
+  background: white;
   padding: 20px;
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.stat-card h3 {
-  margin: 0 0 10px 0;
-  color: #666;
+.action-grid {
+  display: grid;
+  gap: 30px;
+  margin-bottom: 40px;
 }
 
-.stat-card p {
-  margin: 0;
-  font-size: 24px;
-  font-weight: bold;
-  color: #007bff;
+.action-section {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.action-btn {
+  background: #1a237e;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 6px;
+  text-decoration: none;
+  text-align: center;
+  transition: background-color 0.3s;
+}
+
+.action-btn:hover {
+  background: #283593;
+}
+
+.recent-activity {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.activity-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  gap: 20px;
+}
+
+.activity-time {
+  color: #666;
+  font-size: 0.9em;
+}
+
+@media (max-width: 768px) {
+  .quick-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .action-buttons {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
